@@ -88,7 +88,7 @@ function HeroBackground() {
         // As a streak travels outward horizontally, it also curves upward slightly
         // The further from center vertically (yOffset), the more pronounced the curve
         // This mimics the surface curvature of a concave screen
-        const curveLift = -(s.dist * s.dist) / (W * 1.1) * Math.sign(s.yOffset) * 0.6;
+        const curveLift = -(s.dist * s.dist) / (W * -1.1) * Math.sign(s.yOffset) * 0.6;
 
         const x = vpX + s.side * s.dist;
         const y = vpY + s.yOffset + curveLift;
