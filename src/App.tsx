@@ -15,101 +15,87 @@ function HeroBackground() {
     const W = canvas.width;
     const H = canvas.height;
 
-    // Vanishing point — center of canvas
     const vpX = W / 2;
-    const vpY = H * 0.48;
+    const vpY = H * 0.5;
 
     type Streak = {
-      angle: number;
-      dist: number;
+      // Vertical offset from center — determines which "row" on the curved screen
+      yOffset: number;
+      // Which side: -1 = going left, 1 = going right
+      side: number;
+      dist: number;       // horizontal distance traveled from center
       speed: number;
       length: number;
       alpha: number;
       color: string;
       width: number;
-      curvature: number;
-      currentAngle: number;
     };
 
     const COLORS = [
-      '#ffffff', '#ffffff', '#ffffff', '#ffffff',
-      '#dde8ff', '#c0d8ff',
-      '#b0a0ff', '#9060e0',
-      '#ffc080', '#ff9050',
-      '#80eeff', '#40ccdd',
+      '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff',
+      '#e0eeff', '#c8dfff',
+      '#a090ff', '#cc88ff',
+      '#ffaa60', '#ff8844',
+      '#60ddff', '#40bbdd',
     ];
 
-    // Streaks only fan out in a horizontal arc — left and right
-    // Angles roughly between -70° and +70° from horizontal (both left and right sides)
-    function randomAngle(): number {
-      // Left side: PI ± 0.8  |  Right side: 0 ± 0.8
-      const side = Math.random() > 0.5 ? 0 : Math.PI;
-      return side + (Math.random() - 0.5) * 1.6;
-    }
-
-    const streaks: Streak[] = [];
-
     function makeStreak(): Streak {
-      const angle = randomAngle();
+      // yOffset determines vertical position on the curved screen
+      // Concentrated near center vertically, sparse at top/bottom
+      const yOffset = (Math.random() - 0.5) * H * 0.55;
+      const side = Math.random() > 0.5 ? 1 : -1;
       return {
-        angle,
-        currentAngle: angle,
-        dist: 30 + Math.random() * 200,
-        speed: 1.5 + Math.random() * 3.5,   // slow drift
-        length: 120 + Math.random() * 300,
-        alpha: 0.25 + Math.random() * 0.65,
+        yOffset,
+        side,
+        dist: 10 + Math.random() * (W * 0.35),
+        speed: 2 + Math.random() * 5,
+        length: 100 + Math.random() * 280,
+        alpha: 0.2 + Math.random() * 0.75,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        width: 0.4 + Math.random() * 1.4,
-        // Curve upward — streaks that go left curve up-left, right curve up-right
-        // Negative curvature = bends upward on both sides
-        curvature: -0.0018 - Math.random() * 0.0025,
+        width: 0.3 + Math.random() * 1.3,
       };
     }
 
-    // Dense — 400 streaks
-    for (let i = 0; i < 400; i++) {
-      const s = makeStreak();
-      s.dist = Math.random() * Math.hypot(W, H) * 0.8; // stagger starting positions
-      streaks.push(s);
+    const streaks: Streak[] = [];
+    for (let i = 0; i < 450; i++) {
+      streaks.push(makeStreak());
     }
 
     function draw() {
-      ctx!.fillStyle = 'rgba(5, 5, 8, 0.22)';
+      ctx!.fillStyle = 'rgba(4, 4, 7, 0.2)';
       ctx!.fillRect(0, 0, W, H);
-
-      const maxDist = Math.hypot(W / 2, H) * 1.4;
 
       for (const s of streaks) {
         s.dist += s.speed;
-        // Curvature bends the angle as streak travels outward
-        // Left-going streaks (angle near PI) curve upward = angle decreases toward PI*0.6
-        // Right-going streaks (angle near 0) curve upward = angle increases toward -0.4
-        const bendDir = Math.cos(s.angle) >= 0 ? -1 : 1;
-        s.currentAngle += s.curvature * bendDir * -1;
 
+        const maxDist = W * 0.6;
         if (s.dist > maxDist) {
           Object.assign(s, makeStreak());
-          s.dist = 20 + Math.random() * 40;
-          s.currentAngle = s.angle;
+          s.dist = 5;
           continue;
         }
 
         const progress = s.dist / maxDist;
-        const fade = progress < 0.15
-          ? progress / 0.15
-          : progress > 0.85
-            ? (1 - progress) / 0.15
+
+        // Fade in from center, fade out at edge
+        const fade = progress < 0.12
+          ? progress / 0.12
+          : progress > 0.8
+            ? (1 - progress) / 0.2
             : 1;
 
-        const x = vpX + Math.cos(s.currentAngle) * s.dist;
-        const y = vpY + Math.sin(s.currentAngle) * s.dist;
+        // The curved screen effect:
+        // As a streak travels outward horizontally, it also curves upward slightly
+        // The further from center vertically (yOffset), the more pronounced the curve
+        // This mimics the surface curvature of a concave screen
+        const curveLift = -(s.dist * s.dist) / (W * 1.1) * Math.sign(s.yOffset) * 0.6;
 
-        const tailDist = Math.max(1, s.dist - s.length);
-        // Tail angle is slightly less bent (earlier in the curve)
-        const tailAngleDelta = s.curvature * bendDir * -1 * (s.length * 0.5);
-        const tailAngle = s.currentAngle - tailAngleDelta;
-        const tailX = vpX + Math.cos(tailAngle) * tailDist;
-        const tailY = vpY + Math.sin(tailAngle) * tailDist;
+        const x = vpX + s.side * s.dist;
+        const y = vpY + s.yOffset + curveLift;
+
+        const tailX = vpX + s.side * Math.max(0, s.dist - s.length);
+        const tailCurveLift = -(Math.max(0, s.dist - s.length) ** 2) / (W * 1.1) * Math.sign(s.yOffset) * 0.6;
+        const tailY = vpY + s.yOffset + tailCurveLift;
 
         const alpha = s.alpha * fade;
         const alphaHex = Math.round(alpha * 255).toString(16).padStart(2, '0');
@@ -119,20 +105,20 @@ function HeroBackground() {
         grad.addColorStop(1, s.color + alphaHex);
 
         ctx!.beginPath();
+        // Quadratic curve to follow the screen curvature
+        const cpX = vpX + s.side * (s.dist * 0.5);
+        const cpY = vpY + s.yOffset + curveLift * 0.4;
         ctx!.moveTo(tailX, tailY);
-        // Slight bezier curve for the arc shape
-        const cpX = vpX + Math.cos(s.currentAngle - 0.08 * bendDir) * (s.dist * 0.6);
-        const cpY = vpY + Math.sin(s.currentAngle - 0.08 * bendDir) * (s.dist * 0.6);
         ctx!.quadraticCurveTo(cpX, cpY, x, y);
         ctx!.strokeStyle = grad;
-        ctx!.lineWidth = s.width * (0.5 + progress * 1.8);
+        ctx!.lineWidth = s.width * (0.6 + progress);
         ctx!.stroke();
       }
 
       animRef.current = requestAnimationFrame(draw);
     }
 
-    ctx.fillStyle = '#050508';
+    ctx.fillStyle = '#040407';
     ctx.fillRect(0, 0, W, H);
     draw();
     return () => cancelAnimationFrame(animRef.current);
@@ -197,7 +183,8 @@ function GlitchLetter({ char, className = '' }: { char: string; className?: stri
           display: 'inline-block',
           width: '0.65em',
           height: '0.78em',
-          backgroundColor: '#000000',
+          background: "#e7e6d9",
+          color: '#000000',
           boxShadow: '2px 0 0 #ff0040, -2px 0 0 #00ffcc, 0 0 0 1px #6236f4',
           verticalAlign: 'middle',
           position: 'relative',
