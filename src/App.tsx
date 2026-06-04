@@ -6,6 +6,100 @@ function HeroBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
+  // useEffect(() => {
+  //   const canvas = canvasRef.current;
+  //   if (!canvas) return;
+  //   const ctx = canvas.getContext('2d');
+  //   if (!ctx) return;
+
+  //   const W = canvas.width;
+  //   const H = canvas.height;
+
+  //   type Streak = {
+  //     x: number; y: number;
+  //     vx: number; vy: number;
+  //     len: number; alpha: number;
+  //     color: string; width: number;
+  //     life: number; maxLife: number;
+  //   };
+
+  //   const COLORS = [
+  //     'rgba(180,180,220,',
+  //     'rgba(100,120,255,',
+  //     'rgba(200,180,255,',
+  //     'rgba(120,200,255,',
+  //     'rgba(255,200,180,',
+  //     'rgba(255,255,255,',
+  //   ];
+
+  //   const streaks: Streak[] = [];
+
+  //   function makeStreak(): Streak {
+  //     const cx = W / 2;
+  //     const cy = H * 0.45;
+  //     // radiate outward from center with some spread
+  //     const angle = (Math.random() * Math.PI * 2);
+  //     const speed = 4 + Math.random() * 10;
+  //     const maxLife = 40 + Math.random() * 80;
+  //     return {
+  //       x: cx + (Math.random() - 0.5) * W * 0.3,
+  //       y: cy + (Math.random() - 0.5) * H * 0.2,
+  //       vx: Math.cos(angle) * speed,
+  //       vy: Math.sin(angle) * speed,
+  //       len: 60 + Math.random() * 180,
+  //       alpha: 0.3 + Math.random() * 0.7,
+  //       color: COLORS[Math.floor(Math.random() * COLORS.length)],
+  //       width: 0.5 + Math.random() * 1.5,
+  //       life: 0,
+  //       maxLife,
+  //     };
+  //   }
+
+  //   for (let i = 0; i < 180; i++) {
+  //     const s = makeStreak();
+  //     s.life = Math.random() * s.maxLife; // stagger starts
+  //     streaks.push(s);
+  //   }
+
+  //   function draw() {
+  //     ctx!.fillStyle = 'rgba(11,11,11,0.18)';
+  //     ctx!.fillRect(0, 0, W, H);
+
+  //     for (const s of streaks) {
+  //       s.life++;
+  //       if (s.life > s.maxLife) {
+  //         Object.assign(s, makeStreak());
+  //         s.life = 0;
+  //         continue;
+  //       }
+  //       const progress = s.life / s.maxLife;
+  //       const fade = progress < 0.2 ? progress / 0.2 : progress > 0.7 ? (1 - progress) / 0.3 : 1;
+  //       const alpha = s.alpha * fade;
+
+  //       ctx!.beginPath();
+  //       const tailX = s.x - s.vx * (s.len / Math.hypot(s.vx, s.vy));
+  //       const tailY = s.y - s.vy * (s.len / Math.hypot(s.vx, s.vy));
+
+  //       const grad = ctx!.createLinearGradient(tailX, tailY, s.x, s.y);
+  //       grad.addColorStop(0, s.color + '0)');
+  //       grad.addColorStop(1, s.color + alpha + ')');
+  //       ctx!.strokeStyle = grad;
+  //       ctx!.lineWidth = s.width;
+  //       ctx!.moveTo(tailX, tailY);
+  //       ctx!.lineTo(s.x, s.y);
+  //       ctx!.stroke();
+
+  //       s.x += s.vx * 0.6;
+  //       s.y += s.vy * 0.6;
+  //     }
+
+  //     animRef.current = requestAnimationFrame(draw);
+  //   }
+
+  //   draw();
+  //   return () => cancelAnimationFrame(animRef.current);
+  // }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -15,88 +109,102 @@ function HeroBackground() {
     const W = canvas.width;
     const H = canvas.height;
 
+    // Vanishing point — slightly below center
+    const vpX = W / 2;
+    const vpY = H * 0.52;
+
     type Streak = {
-      x: number; y: number;
-      vx: number; vy: number;
-      len: number; alpha: number;
-      color: string; width: number;
-      life: number; maxLife: number;
+      angle: number;       // radial angle from vanishing point
+      startDist: number;   // how far from VP it starts
+      speed: number;       // how fast it travels outward
+      length: number;      // streak length in pixels
+      alpha: number;
+      color: string;
+      width: number;
+      dist: number;        // current distance from VP
+      curve: number;       // how much to bend the streak path
     };
 
     const COLORS = [
-      'rgba(180,180,220,',
-      'rgba(100,120,255,',
-      'rgba(200,180,255,',
-      'rgba(120,200,255,',
-      'rgba(255,200,180,',
-      'rgba(255,255,255,',
+      '#ffffff', '#ffffff', '#ffffff', '#e8e8ff',  // mostly white/silver
+      '#a0c8ff', '#80d4ff',                         // cyan/teal
+      '#c8a0ff', '#9060ff',                         // purple
+      '#ffb060', '#ff8844',                         // warm orange
     ];
 
     const streaks: Streak[] = [];
 
     function makeStreak(): Streak {
-      const cx = W / 2;
-      const cy = H * 0.45;
-      // radiate outward from center with some spread
-      const angle = (Math.random() * Math.PI * 2);
-      const speed = 4 + Math.random() * 10;
-      const maxLife = 40 + Math.random() * 80;
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 8 + Math.random() * 18;
+      const startDist = 20 + Math.random() * 80;
+      const maxDist = Math.hypot(W, H) * 0.7;
       return {
-        x: cx + (Math.random() - 0.5) * W * 0.3,
-        y: cy + (Math.random() - 0.5) * H * 0.2,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        len: 60 + Math.random() * 180,
+        angle,
+        startDist,
+        speed,
+        length: 80 + Math.random() * 220,
         alpha: 0.3 + Math.random() * 0.7,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        width: 0.5 + Math.random() * 1.5,
-        life: 0,
-        maxLife,
+        width: 0.3 + Math.random() * 1.2,
+        dist: startDist + Math.random() * maxDist,
+        curve: (Math.random() - 0.5) * 0.004,
       };
     }
 
-    for (let i = 0; i < 180; i++) {
-      const s = makeStreak();
-      s.life = Math.random() * s.maxLife; // stagger starts
-      streaks.push(s);
-    }
+    for (let i = 0; i < 220; i++) streaks.push(makeStreak());
 
     function draw() {
-      ctx!.fillStyle = 'rgba(11,11,11,0.18)';
+      // Dark fade trail
+      ctx!.fillStyle = 'rgba(6, 6, 8, 0.25)';
       ctx!.fillRect(0, 0, W, H);
 
       for (const s of streaks) {
-        s.life++;
-        if (s.life > s.maxLife) {
+        s.dist += s.speed * 0.7;
+        s.angle += s.curve;
+
+        const maxDist = Math.hypot(vpX, vpY) * 1.6;
+        if (s.dist > maxDist) {
           Object.assign(s, makeStreak());
-          s.life = 0;
+          s.dist = 20 + Math.random() * 60;
           continue;
         }
-        const progress = s.life / s.maxLife;
-        const fade = progress < 0.2 ? progress / 0.2 : progress > 0.7 ? (1 - progress) / 0.3 : 1;
-        const alpha = s.alpha * fade;
+
+        // Current position
+        const x = vpX + Math.cos(s.angle) * s.dist;
+        const y = vpY + Math.sin(s.angle) * s.dist;
+
+        // Tail position (closer to VP)
+        const tailDist = Math.max(0, s.dist - s.length);
+        const tailX = vpX + Math.cos(s.angle) * tailDist;
+        const tailY = vpY + Math.sin(s.angle) * tailDist;
+
+        // Fade based on distance from VP (brighter near edges)
+        const progress = s.dist / maxDist;
+        const fade = Math.min(1, progress * 2.5);
+
+        const grad = ctx!.createLinearGradient(tailX, tailY, x, y);
+        grad.addColorStop(0, 'transparent');
+        const hex = s.color;
+        const alpha = (s.alpha * fade).toFixed(2);
+        grad.addColorStop(1, hex + Math.round(parseFloat(alpha) * 255).toString(16).padStart(2, '0'));
 
         ctx!.beginPath();
-        const tailX = s.x - s.vx * (s.len / Math.hypot(s.vx, s.vy));
-        const tailY = s.y - s.vy * (s.len / Math.hypot(s.vx, s.vy));
-
-        const grad = ctx!.createLinearGradient(tailX, tailY, s.x, s.y);
-        grad.addColorStop(0, s.color + '0)');
-        grad.addColorStop(1, s.color + alpha + ')');
-        ctx!.strokeStyle = grad;
-        ctx!.lineWidth = s.width;
         ctx!.moveTo(tailX, tailY);
-        ctx!.lineTo(s.x, s.y);
+        ctx!.lineTo(x, y);
+        ctx!.strokeStyle = grad;
+        ctx!.lineWidth = s.width * (1 + progress * 2); // widen as they travel out
         ctx!.stroke();
-
-        s.x += s.vx * 0.6;
-        s.y += s.vy * 0.6;
       }
 
       animRef.current = requestAnimationFrame(draw);
     }
 
+    // Start with a black canvas
+    ctx.fillStyle = '#060608';
+    ctx.fillRect(0, 0, W, H);
     draw();
+
     return () => cancelAnimationFrame(animRef.current);
   }, []);
 
@@ -155,12 +263,19 @@ function GlitchLetter({ char, className = '' }: { char: string; className?: stri
   if (glitching) {
     return (
       <span
-        data-variant="highlight"
-        className={className}
-        style={{ display: 'inline-block' }}
-      >
-        {char}
-      </span>
+        style={{
+          display: 'inline-block',
+          width: '0.65em',
+          height: '0.78em',
+          backgroundColor: '#e7e6d9',
+          boxShadow: '2px 0 0 #ff0040, -2px 0 0 #00ffcc, 0 0 0 1px #6236f4',
+          verticalAlign: 'middle',
+          position: 'relative',
+          top: '-0.05em',
+          marginInline: '0.02em',
+        }}
+        aria-hidden="true"
+      />
     );
   }
 
