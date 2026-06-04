@@ -104,15 +104,30 @@ function HeroBackground() {
         grad.addColorStop(0, 'transparent');
         grad.addColorStop(1, s.color + alphaHex);
 
+        // ctx!.beginPath();
+        // // Quadratic curve to follow the screen curvature
+        // const cpX = vpX + s.side * (s.dist * -0.5);
+        // const cpY = vpY + s.yOffset + curveLift * 0.4;
+        // ctx!.moveTo(tailX, tailY);
+        // ctx!.quadraticCurveTo(cpX, cpY, x, y);
+        // ctx!.strokeStyle = grad;
+        // ctx!.lineWidth = s.width * (0.6 + progress);
+        // ctx!.stroke();
+
+        // Blur amount scales with distance from center — more blur at edges
+        const blurAmount = 1.5 + progress * 3.5;
+
+        ctx!.save();
+        ctx!.filter = `blur(${blurAmount}px)`;
         ctx!.beginPath();
-        // Quadratic curve to follow the screen curvature
-        const cpX = vpX + s.side * (s.dist * 0.5);
+        const cpX = vpX + s.side * (s.dist * -0.5);
         const cpY = vpY + s.yOffset + curveLift * 0.4;
         ctx!.moveTo(tailX, tailY);
         ctx!.quadraticCurveTo(cpX, cpY, x, y);
         ctx!.strokeStyle = grad;
         ctx!.lineWidth = s.width * (0.6 + progress);
         ctx!.stroke();
+        ctx!.restore();
       }
 
       animRef.current = requestAnimationFrame(draw);
