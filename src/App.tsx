@@ -42,7 +42,7 @@ function HeroBackground() {
     function makeStreak(): Streak {
       // yOffset determines vertical position on the curved screen
       // Concentrated near center vertically, sparse at top/bottom
-      const yOffset = (Math.random() - 0.5) * H * 0.55;
+      const yOffset = (Math.random() - 0.5) * H * 0.32;
       const side = Math.random() > 0.5 ? 1 : -1;
       return {
         yOffset,
@@ -88,13 +88,17 @@ function HeroBackground() {
         // As a streak travels outward horizontally, it also curves upward slightly
         // The further from center vertically (yOffset), the more pronounced the curve
         // This mimics the surface curvature of a concave screen
-        const curveLift = -(s.dist * s.dist) / (W * -1.1) * Math.sign(s.yOffset) * 0.6;
+        // const curveLift = -(s.dist * s.dist) / (W * -1.1) * Math.sign(s.yOffset) * 0.6;
+
+        const curveLift = (s.dist * s.dist) / (W * 0.55) * Math.sign(s.yOffset) * 1.8;
 
         const x = vpX + s.side * s.dist;
         const y = vpY + s.yOffset + curveLift;
 
         const tailX = vpX + s.side * Math.max(0, s.dist - s.length);
-        const tailCurveLift = -(Math.max(0, s.dist - s.length) ** 2) / (W * 1.1) * Math.sign(s.yOffset) * 0.6;
+        // const tailCurveLift = -(Math.max(0, s.dist - s.length) ** 2) / (W * 1.1) * Math.sign(s.yOffset) * 0.6;
+
+        const tailCurveLift = (Math.max(0, s.dist - s.length) ** 2) / (W * 0.55) * Math.sign(s.yOffset) * 1.8;
         const tailY = vpY + s.yOffset + tailCurveLift;
 
         const alpha = s.alpha * fade;
